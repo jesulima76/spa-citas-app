@@ -783,19 +783,93 @@
     }
 
     function renderAdminTable() {
-      const tbody = document.getElementById('admin-table-body');
-      tbody.innerHTML = state.citas.map(c => `
-        <tr class="border-b border-slate-800/60">
-          <td class="p-4 font-mono text-spa-300">${c.id_cita}</td>
-          <td class="p-4">${c.fecha} (${c.hora_inicio})</td>
-          <td class="p-4 font-semibold text-white">${c.cliente_nombre}</td>
-          <td class="p-4">${c.id_servicio}</td>
-          <td class="p-4">${c.id_especialista}</td>
-          <td class="p-4 text-emerald-400 font-bold">$${c.monto}</td>
-          <td class="p-4"><span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">${c.estado_cita}</span></td>
-        </tr>
-      `).join('');
-    }
+  const tbody = document.getElementById('admin-table-body');
+  if (!tbody) return;
+
+  const filterDate = document.getElementById('admin-filter-date').value;
+  const filterTherapist = document.getElementById('admin-filter-therapist').value;
+  const filterStatus = document.getElementById('admin-filter-status').value;
+
+  let filtered = state.citas || [];
+
+  // 1. Filtro por Fecha (Formato YYYY-MM-DD o ISO)
+  if (filterDate) {
+    filtered = filtered.filter(c => {
+      if (!c.fecha) return false;
+      // Normaliza la fecha por si viene con horas/ISO desde Sheets
+      const cDate = String(c.fecha).split('T')[0];
+      return cDate === filterDate;
+    });
+  }
+
+  // 2. Filtro por Especialista
+  if (filterTherapist && filterTherapist !== 'todos') {
+    filtered = filtered.filter(c => String(c.id_especialista) === String(filterTherapist));
+  }
+
+  // 3. Filtro por Estado
+  if (filterStatus && filterStatus !== 'todos') {
+    filtered = filtered.filter(c => {
+      const status = c.estado_cita || c.estado || 'Confirmada';
+      return String(status).toLowerCase() === String(filterStatus).toLowerCase();
+    });
+  }
+
+  // Si no hay resultados
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="p-8 text-center text-slate-500">
+          No se encontraron citas con los filtros seleccionados.
+        </td>
+      </tr>`;
+    return;
+  }
+
+  // Renderizar filas filtradas
+  tbody.innerHTML = filtered.map(c => {
+    // Normalizar ID y nombres
+    const citaId = c.id_cita || c.id || 'N/A';
+    const fechaVal = String(c.fecha || '').split('T')[0];
+    const horaVal = c.hora_inicio || c.horaInicio || '';
+    const clienteNom = c.cliente_nombre || c.clienteNombre || c.cliente || 'Sin Nombre';
+    const clienteTel = c.cliente_telefono || c.clienteTelefono || '';
+    const montoVal = c.monto || 0;
+    const estadoVal = c.estado_cita || c.estado || 'Confirmada';
+
+    // Buscar nombres legibles de servicio y especialista
+    const srv = state.servicios.find(s => String(s.id_servicio) === String(c.id_servicio));
+    const esp = state.especialistas.find(e => String(e.id_especialista) === String(c.id_especialista));
+
+    const nombreServicio = srv ? srv.nombre : (c.id_servicio || 'Servicio General');
+    const nombreEspecialista = esp ? esp.nombre : (c.id_especialista || 'No Asignado');
+
+    const isConfirmada = String(estadoVal).toLowerCase() === 'confirmada';
+
+    return `
+      <tr class="hover:bg-slate-900/50 transition-colors border-b border-slate-800/60">
+        <td class="p-4 font-mono font-bold text-spa-300">${citaId}</td>
+        <td class="p-4">${fechaVal} <span class="text-slate-400 font-mono">(${horaVal})</span></td>
+        <td class="p-4 font-semibold text-white">
+          ${clienteNom}
+          ${clienteTel ? `<br><span class="text-[10px] text-slate-400 font-normal">${clienteTel}</span>` : ''}
+        </td>
+        <td class="p-4">${nombreServicio}</td>
+        <td class="p-4">${nombreEspecialista}</td>
+        <td class="p-4 text-emerald-400 font-bold">$${montoVal} USD</td>
+        <td class="p-4">
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${
+            isConfirmada
+              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+              : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+          }">
+            ${estadoVal}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
   </script>
 </body>
 </html>

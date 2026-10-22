@@ -11,29 +11,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <script>
   tailwind.config = {
-    theme: {
-      extend: {
-        fontFamily: {
-          sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-          serif: ['"Playfair Display"', 'serif'],
-        },
-        colors: {
-          spa: {
-            50: '#F8F6F0',   /* Fondo Crema */
-            100: '#EFECE6',  /* Tarjeta / Contenedores */
-            200: '#D8D1C5',
-            300: '#A4B29A',  /* Acento Salvia Claro */
-            400: '#7C8A72',
-            500: '#5B6851',  /* Verde Primario */
-            600: '#485340',  /* Hover Primario */
-            700: '#384232',
-            800: '#2A3125',
-            900: '#1C2119',
-          }
+  theme: {
+    extend: {
+      colors: {
+        medispa: {
+          bg: '#F7F3E9',
+          gold: '#C8A34A',
+          goldLight: '#D4AF37',
+          card: '#FFFFFF',
+          text: '#1A1A1A',
+          brown: '#4A3225',
         }
       }
     }
   }
+}
 </script>
   <style>
     ::-webkit-scrollbar { width: 6px; height: 6px; }

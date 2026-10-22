@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>San Diego Spa & Wellness - Sistema de Reserva & Gestión</title>
+  <title>Aura Spa & Wellness - Reserva, POS & Facturación</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -45,6 +45,31 @@
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
+    
+    /* ESTILOS DE TICKET POS PARA IMPRESORA TÉRMICA (58mm / 80mm) */
+    .ticket-pos-box {
+      width: 280px;
+      margin: 0 auto;
+      padding: 12px;
+      background: #ffffff;
+      color: #000000;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      #modal-pos-ticket, #modal-pos-ticket * { visibility: visible; }
+      #modal-pos-ticket {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white;
+      }
+      .no-print { display: none !important; }
+    }
   </style>
 </head>
 <body class="h-full font-sans antialiased flex flex-col bg-slate-950 text-slate-100 selection:bg-spa-500 selection:text-white">
@@ -57,8 +82,8 @@
           <i data-lucide="sparkles" class="w-6 h-6"></i>
         </div>
         <div>
-          <span class="font-serif text-2xl font-bold tracking-tight text-white block leading-tight">San Diego Spa & Wellness</span>
-          <span class="text-xs text-spa-300 font-medium tracking-widest uppercase">Gestión & Reservas</span>
+          <span class="font-serif text-2xl font-bold tracking-tight text-white block leading-tight">Aura Spa & Wellness</span>
+          <span class="text-xs text-spa-300 font-medium tracking-widest uppercase">Gestión & Facturación POS</span>
         </div>
       </div>
 
@@ -110,11 +135,9 @@
 
       <!-- STEP 1: SERVICES -->
       <div id="step-content-1" class="space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 class="font-serif text-2xl font-bold text-white">Selecciona tu Tratamiento</h2>
-            <p class="text-sm text-slate-400">Explora nuestro menú de relajación y bienestar exclusivo.</p>
-          </div>
+        <div>
+          <h2 class="font-serif text-2xl font-bold text-white">Selecciona tu Tratamiento</h2>
+          <p class="text-sm text-slate-400">Explora nuestro menú de relajación y bienestar exclusivo.</p>
         </div>
         <div id="services-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
       </div>
@@ -218,7 +241,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: ADMIN PANEL WITH CATALOG MANAGEMENT -->
+    <!-- VIEW 2: ADMIN PANEL WITH APPOINTMENTS, FACTURACIÓN POS & CATALOG MANAGEMENT -->
     <section id="view-admin" class="space-y-6 hidden">
       
       <!-- Sub-Navigation for Admin -->
@@ -227,13 +250,17 @@
           <i data-lucide="calendar" class="w-4 h-4"></i>
           <span>Agenda de Citas</span>
         </button>
+        <button id="admin-subtab-facturas" onclick="switchAdminSubtab('facturas')" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+          <i data-lucide="receipt" class="w-4 h-4"></i>
+          <span>Historial de Facturación POS</span>
+        </button>
         <button id="admin-subtab-catalog" onclick="switchAdminSubtab('catalog')" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
           <i data-lucide="settings" class="w-4 h-4"></i>
           <span>Gestión de Catálogo & Personal</span>
         </button>
       </div>
 
-      <!-- SUBTAB 1: APPOINTMENTS TABLE -->
+      <!-- SUBTAB 1: APPOINTMENTS TABLE & QUICK INVOICING -->
       <div id="admin-subcontent-citas" class="space-y-4">
         <div class="glass-panel p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
@@ -251,6 +278,7 @@
             <select id="admin-filter-status" onchange="renderAdminTable()" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs">
               <option value="todos">Todos los Estados</option>
               <option value="Confirmada">Confirmadas</option>
+              <option value="Completada">Completadas</option>
               <option value="Cancelada">Canceladas</option>
             </select>
           </div>
@@ -267,6 +295,7 @@
                 <th class="p-4">Especialista</th>
                 <th class="p-4">Monto</th>
                 <th class="p-4">Estado</th>
+                <th class="p-4">Acciones / Cobro</th>
               </tr>
             </thead>
             <tbody id="admin-table-body" class="divide-y divide-slate-800/60"></tbody>
@@ -274,10 +303,79 @@
         </div>
       </div>
 
-      <!-- SUBTAB 2: CATALOG MANAGEMENT (SERVICES & SPECIALISTS) -->
-      <div id="admin-subcontent-catalog" class="space-y-8 hidden">
+      <!-- SUBTAB 2: FACTURACIÓN POS & HISTORIAL AVANZADO -->
+      <div id="admin-subcontent-facturas" class="space-y-6 hidden">
         
-        <!-- SECTION: SERVICES MANAGEMENT -->
+        <!-- Métricas de Caja -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-emerald-500">
+            <span class="text-xs text-slate-400 block mb-1">Total Facturado</span>
+            <span id="metric-monto-total" class="text-2xl font-bold text-emerald-400">$0.00 USD</span>
+          </div>
+          <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-spa-500">
+            <span class="text-xs text-slate-400 block mb-1">Facturas Emitidas</span>
+            <span id="metric-cant-facturas" class="text-2xl font-bold text-white">0</span>
+          </div>
+          <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-amber-500">
+            <span class="text-xs text-slate-400 block mb-1">Promedio por Ticket</span>
+            <span id="metric-promedio-ticket" class="text-2xl font-bold text-amber-300">$0.00 USD</span>
+          </div>
+        </div>
+
+        <!-- Filtros Avanzados del Historial -->
+        <div class="glass-panel p-4 rounded-2xl space-y-3">
+          <h4 class="text-xs font-semibold text-spa-300 uppercase tracking-wider">Filtros Avanzados de Facturación</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Especialista</label>
+              <select id="hist-filter-therapist" onchange="renderInvoiceTable()" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs">
+                <option value="todos">Todos los Especialistas</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Categoría / Tipo Servicio</label>
+              <select id="hist-filter-category" onchange="renderInvoiceTable()" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs">
+                <option value="todos">Todas las Categorías</option>
+                <option value="Masajes">Masajes</option>
+                <option value="Faciales">Faciales</option>
+                <option value="Hidroterapia">Hidroterapia</option>
+                <option value="Combos">Combos</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Fecha Desde</label>
+              <input type="date" id="hist-filter-start" onchange="renderInvoiceTable()" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Fecha Hasta</label>
+              <input type="date" id="hist-filter-end" onchange="renderInvoiceTable()" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla Historial Facturas -->
+        <div class="glass-panel rounded-2xl overflow-hidden">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/90 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+              <tr>
+                <th class="p-4">N° Factura</th>
+                <th class="p-4">Fecha & Hora</th>
+                <th class="p-4">Cliente</th>
+                <th class="p-4">Especialista</th>
+                <th class="p-4">Categoría</th>
+                <th class="p-4">Detalle Servicio</th>
+                <th class="p-4">Monto Total</th>
+                <th class="p-4">Reimprimir</th>
+              </tr>
+            </thead>
+            <tbody id="invoice-table-body" class="divide-y divide-slate-800/60"></tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- SUBTAB 3: CATALOG MANAGEMENT -->
+      <div id="admin-subcontent-catalog" class="space-y-8 hidden">
         <div class="space-y-4">
           <div class="flex items-center justify-between">
             <div>
@@ -289,11 +387,9 @@
               <span>+ Nuevo Servicio</span>
             </button>
           </div>
-
           <div id="admin-services-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
 
-        <!-- SECTION: SPECIALISTS MANAGEMENT -->
         <div class="space-y-4 pt-6 border-t border-slate-800">
           <div class="flex items-center justify-between">
             <div>
@@ -305,16 +401,69 @@
               <span>+ Nuevo Especialista</span>
             </button>
           </div>
-
           <div id="admin-specialists-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
-
       </div>
+
     </section>
 
   </main>
 
-  <!-- MODAL: CREAR SERVICIO -->
+  <!-- MODAL: FACTURA POS IMPRESORA TÉRMICA -->
+  <div id="modal-pos-ticket" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-md w-full rounded-3xl p-6 space-y-4 border border-slate-700 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 no-print">
+        <h3 class="font-serif text-lg font-bold text-white">Factura de Servicio POS</h3>
+        <button onclick="toggleTicketModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <!-- TICKET POS IMPRESIÓN (MONOCROMÁTICO ESTÁNDAR) -->
+      <div class="ticket-pos-box rounded-lg shadow-inner">
+        <div class="text-center pb-2 border-b border-dashed border-black">
+          <h2 class="font-bold text-sm uppercase">AURA SPA & WELLNESS</h2>
+          <p class="text-[10px]">RIF: J-50000000-0</p>
+          <p class="text-[10px]">Av. Principal El Bosque, Edif. Aura</p>
+          <p class="text-[10px]">Teléfono: +58 412 1234567</p>
+        </div>
+
+        <div class="py-2 border-b border-dashed border-black text-[10px] space-y-0.5">
+          <div><strong id="tkt-num">COMPROBANTE: FAC-00000</strong></div>
+          <div>FECHA: <span id="tkt-date">2026-10-22</span></div>
+          <div>CLIENTE: <span id="tkt-client">Cliente</span></div>
+          <div>ESPECIALISTA: <span id="tkt-therapist">Especialista</span></div>
+        </div>
+
+        <table class="w-full my-2 border-b border-dashed border-black text-[10px]">
+          <thead>
+            <tr class="border-b border-black text-left">
+              <th class="pb-1">DESCRIPCIÓN</th>
+              <th class="pb-1 text-right">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody id="tkt-items"></tbody>
+        </table>
+
+        <div class="pt-1 text-right font-bold text-xs">
+          TOTAL PAGADO: <span id="tkt-total">$0.00 USD</span>
+        </div>
+
+        <div class="text-center pt-3 mt-2 border-t border-dashed border-black text-[9px] space-y-1">
+          <p>¡Gracias por elegir tu momento de bienestar!</p>
+          <p>*** Conserve esta factura ***</p>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2 no-print">
+        <button onclick="toggleTicketModal()" class="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cerrar</button>
+        <button onclick="window.print()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>Imprimir POS</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS: NUEVO SERVICIO Y ESPECIALISTA -->
   <div id="modal-new-service" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
     <div class="glass-panel max-w-lg w-full rounded-3xl p-6 space-y-4 border border-slate-700 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -358,7 +507,6 @@
     </div>
   </div>
 
-  <!-- MODAL: CREAR ESPECIALISTA -->
   <div id="modal-new-specialist" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
     <div class="glass-panel max-w-lg w-full rounded-3xl p-6 space-y-4 border border-slate-700 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -383,7 +531,6 @@
     </div>
   </div>
 
-  <!-- CONFIG MODAL -->
   <div id="config-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
     <div class="glass-panel max-w-xl w-full rounded-3xl p-6 space-y-4 border border-slate-700">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -408,7 +555,8 @@
       especialistas: [
         { id_especialista: 'ESP-01', nombre: 'Elena Rostova', especialidad: 'Masajista Terapéutica', turnos_horarios: '09:00,10:30,12:00,14:00,15:30,17:00', estado: 'Activo' }
       ],
-      citas: []
+      citas: [],
+      facturas: []
     };
 
     let draftBooking = { servicio: null, especialista: null, fecha: '', hora_inicio: '', hora_fin: '', monto: 0 };
@@ -437,6 +585,7 @@
             state.servicios = data.servicios.length ? data.servicios : state.servicios;
             state.especialistas = data.especialistas.length ? data.especialistas : state.especialistas;
             state.citas = data.citas.length ? data.citas : state.citas;
+            state.facturas = data.facturas.length ? data.facturas : state.facturas;
           }
         } catch (err) { console.warn("Usando datos locales", err); }
       }
@@ -452,22 +601,191 @@
 
     function switchAdminSubtab(subtab) {
       document.getElementById('admin-subcontent-citas').classList.toggle('hidden', subtab !== 'citas');
+      document.getElementById('admin-subcontent-facturas').classList.toggle('hidden', subtab !== 'facturas');
       document.getElementById('admin-subcontent-catalog').classList.toggle('hidden', subtab !== 'catalog');
       
       document.getElementById('admin-subtab-citas').className = subtab === 'citas' ? "pb-3 border-b-2 border-spa-500 text-spa-400 flex items-center gap-2" : "pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2";
+      document.getElementById('admin-subtab-facturas').className = subtab === 'facturas' ? "pb-3 border-b-2 border-spa-500 text-spa-400 flex items-center gap-2" : "pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2";
       document.getElementById('admin-subtab-catalog').className = subtab === 'catalog' ? "pb-3 border-b-2 border-spa-500 text-spa-400 flex items-center gap-2" : "pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2";
       
+      if (subtab === 'facturas') renderInvoiceTable();
       if (subtab === 'catalog') renderCatalogManagement();
     }
 
-    // --- RENDERIZADO DEL CATÁLOGO & CAMBIO DE ESTADO (ACTIVAR / DESHABILITAR) ---
+    // --- MÓDULO COBRO POS & FACTURACIÓN DE CITAS ---
+    async function cobrarCita(idCita) {
+      const cita = state.citas.find(c => String(c.id_cita) === String(idCita));
+      if (!cita) return;
+
+      const srv = state.servicios.find(s => String(s.id_servicio) === String(cita.id_servicio));
+      const esp = state.especialistas.find(e => String(e.id_especialista) === String(cita.id_especialista));
+
+      const payloadFactura = {
+        action: 'createInvoice',
+        id_cita: cita.id_cita,
+        cliente: cita.cliente_nombre,
+        especialista: esp ? esp.nombre : cita.id_especialista,
+        categoria_servicio: srv ? srv.categoria : 'General',
+        detalle_servicio: srv ? srv.nombre : cita.id_servicio,
+        monto_total: cita.monto,
+        metodo_pago: 'Efectivo/Punto'
+      };
+
+      let idFac = 'FAC-' + Math.floor(10000 + Math.random() * 90000);
+      let fechaFac = new Date().toISOString();
+
+      if (API_URL) {
+        try {
+          const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payloadFactura) });
+          const result = await res.json();
+          if (result.status === 'success') {
+            idFac = result.id_factura;
+            fechaFac = result.fecha;
+          }
+        } catch (e) { console.warn("Error API", e); }
+      }
+
+      // Actualizar estados locales
+      cita.estado_cita = 'Completada';
+      const facturaObj = { ...payloadFactura, id_factura: idFac, fecha: fechaFac };
+      state.facturas.unshift(facturaObj);
+
+      renderAdminTable();
+      mostrarTicketPOS(facturaObj);
+    }
+
+    function mostrarTicketPOS(fac) {
+      document.getElementById('tkt-num').innerText = 'COMPROBANTE: ' + fac.id_factura;
+      document.getElementById('tkt-date').innerText = String(fac.fecha).split('T')[0];
+      document.getElementById('tkt-client').innerText = fac.cliente;
+      document.getElementById('tkt-therapist').innerText = fac.especialista;
+
+      const itemsTbody = document.getElementById('tkt-items');
+      itemsTbody.innerHTML = `
+        <tr>
+          <td class="py-1 font-semibold">${fac.detalle_servicio}</td>
+          <td class="py-1 text-right font-bold">$${Number(fac.monto_total).toFixed(2)}</td>
+        </tr>
+      `;
+
+      document.getElementById('tkt-total').innerText = `$${Number(fac.monto_total).toFixed(2)} USD`;
+      toggleTicketModal();
+    }
+
+    // --- RENDERIZADO TABLA HISTORIAL FACTURACIÓN ---
+    function renderInvoiceTable() {
+      const tbody = document.getElementById('invoice-table-body');
+      if (!tbody) return;
+
+      const fTherapist = document.getElementById('hist-filter-therapist').value;
+      const fCategory = document.getElementById('hist-filter-category').value;
+      const fStart = document.getElementById('hist-filter-start').value;
+      const fEnd = document.getElementById('hist-filter-end').value;
+
+      let list = state.facturas || [];
+
+      // Filtros Múltiples
+      if (fTherapist !== 'todos') list = list.filter(f => String(f.especialista) === String(fTherapist));
+      if (fCategory !== 'todos') list = list.filter(f => String(f.categoria_servicio) === String(fCategory));
+      if (fStart) list = list.filter(f => String(f.fecha).split('T')[0] >= fStart);
+      if (fEnd) list = list.filter(f => String(f.fecha).split('T')[0] <= fEnd);
+
+      // Recalcular Métricas de Caja
+      let totalMonto = 0;
+      list.forEach(f => totalMonto += Number(f.monto_total || 0));
+      const cant = list.length;
+      const promedio = cant > 0 ? totalMonto / cant : 0;
+
+      document.getElementById('metric-monto-total').innerText = `$${totalMonto.toFixed(2)} USD`;
+      document.getElementById('metric-cant-facturas').innerText = cant;
+      document.getElementById('metric-promedio-ticket').innerText = `$${promedio.toFixed(2)} USD`;
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-500">No se encontraron facturas registradas.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(f => `
+        <tr class="hover:bg-slate-900/50 transition-colors border-b border-slate-800/60">
+          <td class="p-4 font-mono font-bold text-emerald-400">${f.id_factura}</td>
+          <td class="p-4">${String(f.fecha).split('T')[0]}</td>
+          <td class="p-4 font-semibold text-white">${f.cliente}</td>
+          <td class="p-4">${f.especialista}</td>
+          <td class="p-4"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-spa-300 border border-slate-700">${f.categoria_servicio}</span></td>
+          <td class="p-4">${f.detalle_servicio}</td>
+          <td class="p-4 font-bold text-emerald-400">$${Number(f.monto_total).toFixed(2)}</td>
+          <td class="p-4">
+            <button onclick='mostrarTicketPOS(${JSON.stringify(f)})' class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-spa-600 text-white font-semibold flex items-center gap-1 text-[11px]">
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i> Ticket
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function toggleTicketModal() { document.getElementById('modal-pos-ticket').classList.toggle('hidden'); }
+
+    // --- AGENDA DE CITAS Y ACCIONES DE TABLA ---
+    function renderAdminTable() {
+      const tbody = document.getElementById('admin-table-body');
+      if (!tbody) return;
+
+      const filterDate = document.getElementById('admin-filter-date').value;
+      const filterTherapist = document.getElementById('admin-filter-therapist').value;
+      const filterStatus = document.getElementById('admin-filter-status').value;
+
+      let filtered = state.citas || [];
+
+      if (filterDate) filtered = filtered.filter(c => String(c.fecha).split('T')[0] === filterDate);
+      if (filterTherapist && filterTherapist !== 'todos') filtered = filtered.filter(c => String(c.id_especialista) === String(filterTherapist));
+      if (filterStatus && filterStatus !== 'todos') filtered = filtered.filter(c => String(c.estado_cita || 'Confirmada').toLowerCase() === String(filterStatus).toLowerCase());
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-500">No se encontraron citas registradas.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(c => {
+        const srv = state.servicios.find(s => String(s.id_servicio) === String(c.id_servicio));
+        const esp = state.especialistas.find(e => String(e.id_especialista) === String(c.id_especialista));
+        const isCompletada = c.estado_cita === 'Completada';
+
+        return `
+          <tr class="hover:bg-slate-900/50 transition-colors border-b border-slate-800/60">
+            <td class="p-4 font-mono font-bold text-spa-300">${c.id_cita}</td>
+            <td class="p-4">${String(c.fecha).split('T')[0]} <span class="text-slate-400 font-mono">(${c.hora_inicio})</span></td>
+            <td class="p-4 font-semibold text-white">${c.cliente_nombre}<br><span class="text-[10px] text-slate-400 font-normal">${c.cliente_telefono}</span></td>
+            <td class="p-4">${srv ? srv.nombre : c.id_servicio}</td>
+            <td class="p-4">${esp ? esp.nombre : c.id_especialista}</td>
+            <td class="p-4 text-emerald-400 font-bold">$${c.monto}</td>
+            <td class="p-4">
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${isCompletada ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}">
+                ${c.estado_cita || 'Confirmada'}
+              </span>
+            </td>
+            <td class="p-4">
+              ${!isCompletada ? `
+                <button onclick="cobrarCita('${c.id_cita}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1 shadow-md">
+                  <i data-lucide="receipt" class="w-3.5 h-3.5"></i> Cobrar POS
+                </button>
+              ` : `
+                <span class="text-slate-500 italic text-[11px]">Facturada</span>
+              `}
+            </td>
+          </tr>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // --- CATALOG MANAGEMENT & ESTADOS ---
     function renderCatalogManagement() {
-      // Lista de servicios en Panel Admin
       const srvList = document.getElementById('admin-services-list');
       srvList.innerHTML = state.servicios.map(s => {
         const isInactive = s.estado === 'Inactivo';
         return `
-          <div class="glass-panel p-4 rounded-2xl border ${isInactive ? 'border-rose-900/50 opacity-65' : 'border-slate-800'} flex items-center justify-between text-xs transition-all">
+          <div class="glass-panel p-4 rounded-2xl border ${isInactive ? 'border-rose-900/50 opacity-65' : 'border-slate-800'} flex items-center justify-between text-xs">
             <div class="flex items-center gap-3">
               <img src="${s.imagen_url}" class="w-12 h-12 rounded-xl object-cover border border-slate-700">
               <div>
@@ -482,7 +800,7 @@
             </div>
             <div class="flex items-center gap-3">
               <span class="font-bold text-emerald-400 text-sm">$${s.precio}</span>
-              <button onclick="toggleServiceStatus('${s.id_servicio}')" class="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${isInactive ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800'}">
+              <button onclick="toggleServiceStatus('${s.id_servicio}')" class="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold ${isInactive ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-rose-950/80 text-rose-300 border border-rose-800'}">
                 ${isInactive ? 'Activar' : 'Deshabilitar'}
               </button>
             </div>
@@ -490,12 +808,11 @@
         `;
       }).join('');
 
-      // Lista de especialistas en Panel Admin
       const espList = document.getElementById('admin-specialists-list');
       espList.innerHTML = state.especialistas.map(e => {
         const isInactive = e.estado === 'Inactivo';
         return `
-          <div class="glass-panel p-4 rounded-2xl border ${isInactive ? 'border-rose-900/50 opacity-65' : 'border-slate-800'} space-y-3 text-xs transition-all">
+          <div class="glass-panel p-4 rounded-2xl border ${isInactive ? 'border-rose-900/50 opacity-65' : 'border-slate-800'} space-y-3 text-xs">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl ${isInactive ? 'bg-slate-800 text-slate-500' : 'bg-spa-800 text-spa-300'} font-bold flex items-center justify-center font-serif">
@@ -511,7 +828,7 @@
                   <span class="text-spa-400">${e.especialidad}</span>
                 </div>
               </div>
-              <button onclick="toggleSpecialistStatus('${e.id_especialista}')" class="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${isInactive ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800'}">
+              <button onclick="toggleSpecialistStatus('${e.id_especialista}')" class="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold ${isInactive ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-rose-950/80 text-rose-300 border border-rose-800'}">
                 ${isInactive ? 'Activar' : 'Deshabilitar'}
               </button>
             </div>
@@ -522,49 +839,27 @@
         `;
       }).join('');
 
-      // Actualizar opciones de filtros en la agenda
-      document.getElementById('admin-filter-therapist').innerHTML = `<option value="todos">Todos los Especialistas</option>` +
-        state.especialistas.map(e => `<option value="${e.id_especialista}">${e.nombre}</option>`).join('');
+      // Poblar listas desplegables de especialistas en los filtros
+      const espOptions = `<option value="todos">Todos los Especialistas</option>` +
+        state.especialistas.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join('');
+      document.getElementById('admin-filter-therapist').innerHTML = espOptions;
+      document.getElementById('hist-filter-therapist').innerHTML = espOptions;
     }
 
-    // ACCIÓN: CAMBIAR ESTADO DE SERVICIO
     async function toggleServiceStatus(id) {
       const srv = state.servicios.find(s => s.id_servicio === id);
       if (!srv) return;
-
-      const nuevoEstado = (srv.estado === 'Inactivo') ? 'Activo' : 'Inactivo';
-      srv.estado = nuevoEstado; // Actualización rápida en la interfaz
-
-      if (API_URL) {
-        try {
-          await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'toggleServiceStatus', id_servicio: id })
-          });
-        } catch (e) { console.warn("Error enviando actualización a API", e); }
-      }
-
+      srv.estado = (srv.estado === 'Inactivo') ? 'Activo' : 'Inactivo';
+      if (API_URL) fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'toggleServiceStatus', id_servicio: id }) });
       renderServices();
       renderCatalogManagement();
     }
 
-    // ACCIÓN: CAMBIAR ESTADO DE ESPECIALISTA
     async function toggleSpecialistStatus(id) {
       const esp = state.especialistas.find(e => e.id_especialista === id);
       if (!esp) return;
-
-      const nuevoEstado = (esp.estado === 'Inactivo') ? 'Activo' : 'Inactivo';
-      esp.estado = nuevoEstado; // Actualización rápida en la interfaz
-
-      if (API_URL) {
-        try {
-          await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'toggleSpecialistStatus', id_especialista: id })
-          });
-        } catch (e) { console.warn("Error enviando actualización a API", e); }
-      }
-
+      esp.estado = (esp.estado === 'Inactivo') ? 'Activo' : 'Inactivo';
+      if (API_URL) fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'toggleSpecialistStatus', id_especialista: id }) });
       renderCatalogManagement();
     }
 
@@ -584,13 +879,12 @@
       };
 
       let newId = 'SRV-' + Math.floor(100 + Math.random() * 900);
-
       if (API_URL) {
         try {
           const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
           const result = await res.json();
           if (result.status === 'success') newId = result.id_servicio;
-        } catch(e) { console.warn("Error API", e); }
+        } catch(e){}
       }
 
       state.servicios.push({ ...payload, id_servicio: newId, estado: 'Activo' });
@@ -614,13 +908,12 @@
       };
 
       let newId = 'ESP-' + Math.floor(10 + Math.random() * 90);
-
       if (API_URL) {
         try {
           const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
           const result = await res.json();
           if (result.status === 'success') newId = result.id_especialista;
-        } catch(e) { console.warn("Error API", e); }
+        } catch(e){}
       }
 
       state.especialistas.push({ ...payload, id_especialista: newId, estado: 'Activo' });
@@ -643,17 +936,14 @@
       loadInitialData();
     }
 
-    // --- VISTA DE CLIENTE (FILTRA ÚNICAMENTE ELEMENTOS ACTIVOS) ---
+    // --- CLIENT BOOKING WIZARD ---
     function renderServices() {
       const grid = document.getElementById('services-grid');
-      // Filtro para mostrar exclusivamente servicios ACTIVOS al cliente
       const activos = state.servicios.filter(s => s.estado !== 'Inactivo');
-
       if (activos.length === 0) {
-        grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">No hay servicios disponibles en este momento.</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">No hay servicios disponibles.</div>`;
         return;
       }
-
       grid.innerHTML = activos.map(s => `
         <div class="glass-panel rounded-2xl overflow-hidden flex flex-col justify-between">
           <div>
@@ -673,14 +963,11 @@
 
     function renderSpecialists() {
       const grid = document.getElementById('specialists-grid');
-      // Filtro para mostrar exclusivamente especialistas ACTIVOS al cliente
       const activos = state.especialistas.filter(e => e.estado !== 'Inactivo');
-
       if (activos.length === 0) {
-        grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">No hay especialistas disponibles en este momento.</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">No hay especialistas disponibles.</div>`;
         return;
       }
-
       grid.innerHTML = activos.map(e => `
         <div class="glass-panel p-5 rounded-2xl space-y-3">
           <h3 class="font-serif font-bold text-white text-base">${e.nombre}</h3>
@@ -691,9 +978,7 @@
     }
 
     function goToStep(step) {
-      for (let i = 1; i <= 4; i++) {
-        document.getElementById(`step-content-${i}`).classList.add('hidden');
-      }
+      for (let i = 1; i <= 4; i++) document.getElementById(`step-content-${i}`).classList.add('hidden');
       document.getElementById(`step-content-${step}`).classList.remove('hidden');
       if (step === 2) renderSpecialists();
       if (step === 3) updateBookingSummaryMini();
@@ -781,95 +1066,6 @@
       document.getElementById('booking-success-card').classList.add('hidden');
       goToStep(1);
     }
-
-    function renderAdminTable() {
-  const tbody = document.getElementById('admin-table-body');
-  if (!tbody) return;
-
-  const filterDate = document.getElementById('admin-filter-date').value;
-  const filterTherapist = document.getElementById('admin-filter-therapist').value;
-  const filterStatus = document.getElementById('admin-filter-status').value;
-
-  let filtered = state.citas || [];
-
-  // 1. Filtro por Fecha (Formato YYYY-MM-DD o ISO)
-  if (filterDate) {
-    filtered = filtered.filter(c => {
-      if (!c.fecha) return false;
-      // Normaliza la fecha por si viene con horas/ISO desde Sheets
-      const cDate = String(c.fecha).split('T')[0];
-      return cDate === filterDate;
-    });
-  }
-
-  // 2. Filtro por Especialista
-  if (filterTherapist && filterTherapist !== 'todos') {
-    filtered = filtered.filter(c => String(c.id_especialista) === String(filterTherapist));
-  }
-
-  // 3. Filtro por Estado
-  if (filterStatus && filterStatus !== 'todos') {
-    filtered = filtered.filter(c => {
-      const status = c.estado_cita || c.estado || 'Confirmada';
-      return String(status).toLowerCase() === String(filterStatus).toLowerCase();
-    });
-  }
-
-  // Si no hay resultados
-  if (filtered.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7" class="p-8 text-center text-slate-500">
-          No se encontraron citas con los filtros seleccionados.
-        </td>
-      </tr>`;
-    return;
-  }
-
-  // Renderizar filas filtradas
-  tbody.innerHTML = filtered.map(c => {
-    // Normalizar ID y nombres
-    const citaId = c.id_cita || c.id || 'N/A';
-    const fechaVal = String(c.fecha || '').split('T')[0];
-    const horaVal = c.hora_inicio || c.horaInicio || '';
-    const clienteNom = c.cliente_nombre || c.clienteNombre || c.cliente || 'Sin Nombre';
-    const clienteTel = c.cliente_telefono || c.clienteTelefono || '';
-    const montoVal = c.monto || 0;
-    const estadoVal = c.estado_cita || c.estado || 'Confirmada';
-
-    // Buscar nombres legibles de servicio y especialista
-    const srv = state.servicios.find(s => String(s.id_servicio) === String(c.id_servicio));
-    const esp = state.especialistas.find(e => String(e.id_especialista) === String(c.id_especialista));
-
-    const nombreServicio = srv ? srv.nombre : (c.id_servicio || 'Servicio General');
-    const nombreEspecialista = esp ? esp.nombre : (c.id_especialista || 'No Asignado');
-
-    const isConfirmada = String(estadoVal).toLowerCase() === 'confirmada';
-
-    return `
-      <tr class="hover:bg-slate-900/50 transition-colors border-b border-slate-800/60">
-        <td class="p-4 font-mono font-bold text-spa-300">${citaId}</td>
-        <td class="p-4">${fechaVal} <span class="text-slate-400 font-mono">(${horaVal})</span></td>
-        <td class="p-4 font-semibold text-white">
-          ${clienteNom}
-          ${clienteTel ? `<br><span class="text-[10px] text-slate-400 font-normal">${clienteTel}</span>` : ''}
-        </td>
-        <td class="p-4">${nombreServicio}</td>
-        <td class="p-4">${nombreEspecialista}</td>
-        <td class="p-4 text-emerald-400 font-bold">$${montoVal} USD</td>
-        <td class="p-4">
-          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${
-            isConfirmada
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-              : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-          }">
-            ${estadoVal}
-          </span>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
   </script>
 </body>
 </html>

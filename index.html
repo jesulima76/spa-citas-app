@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spa & Wellness - Sistema de Reserva de Citas</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+          },
+          colors: {
+            spa: {
+              50: '#f4f8f6',
+              100: '#e3eee9',
+              200: '#c7dd36',
+              300: '#a1c6b5',
+              400: '#72a891',
+              500: '#4e8b73',
+              600: '#3a6f5b',
+              700: '#2e5748',
+              800: '#28473c',
+              900: '#223c33',
+              950: '#11221d',
+            },
+            gold: {
+              400: '#fbbf24',
+              500: '#d97706',
+              600: '#b45309'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar & glassmorphism styling */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="h-full font-sans antialiased flex flex-col bg-slate-950 text-slate-100 selection:bg-spa-500 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-spa-600 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-spa-600/30">
+          <i data-lucide="sparkles" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <span class="font-serif text-2xl font-bold tracking-tight text-white block leading-tight">Aura Spa & Wellness</span>
+          <span class="text-xs text-spa-300 font-medium tracking-widest uppercase">Reserva en Línea</span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs & Script Status Indicator -->
+      <div class="flex items-center gap-2 sm:gap-4">
+        <nav class="flex p-1 bg-slate-900/90 rounded-xl border border-slate-800">
+          <button id="nav-booking" onclick="switchView('booking')" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 bg-spa-600 text-white shadow-md">
+            <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+            <span>Reservar Cita</span>
+          </button>
+          <button id="nav-admin" onclick="switchView('admin')" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Panel Admin</span>
+          </button>
+        </nav>
+
+        <button onclick="toggleConfigModal()" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-spa-500 transition-all relative group" title="Configurar Conexión & Código">
+          <i data-lucide="code-2" class="w-5 h-5"></i>
+          <span id="status-dot" class="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border-2 border-slate-950"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- CONNECTION BANNER NOTICE (When using Mock Data) -->
+    <div id="demo-banner" class="mb-8 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+          <i data-lucide="info" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold text-amber-200">Modo Demo / Datos de Prueba Activo</h4>
+          <p class="text-xs text-slate-400">Esta aplicación se está ejecutando localmente con datos simulados. Vincula tu Web App de Google Apps Script para guardar datos en Google Sheets.</p>
+        </div>
+      </div>
+      <button onclick="toggleConfigModal()" class="text-xs font-semibold px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all whitespace-nowrap shadow-md">
+        Configurar Backend
+      </button>
+    </div>
+
+    <!-- VIEW 1: BOOKING WIZARD -->
+    <section id="view-booking" class="space-y-8">
+      
+      <!-- Wizard Progress Bar -->
+      <div class="glass-panel p-4 rounded-2xl">
+        <div class="grid grid-cols-4 gap-2 text-center text-xs font-medium">
+          <div id="step-indicator-1" class="py-2.5 rounded-xl bg-spa-600 text-white flex items-center justify-center gap-2 transition-all shadow-md">
+            <span class="w-5 h-5 rounded-full bg-white/20 text-xs flex items-center justify-center font-bold">1</span>
+            <span class="hidden sm:inline">Servicios</span>
+          </div>
+          <div id="step-indicator-2" class="py-2.5 rounded-xl bg-slate-800/80 text-slate-400 flex items-center justify-center gap-2 transition-all">
+            <span class="w-5 h-5 rounded-full bg-slate-700 text-xs flex items-center justify-center font-bold">2</span>
+            <span class="hidden sm:inline">Especialista</span>
+          </div>
+          <div id="step-indicator-3" class="py-2.5 rounded-xl bg-slate-800/80 text-slate-400 flex items-center justify-center gap-2 transition-all">
+            <span class="w-5 h-5 rounded-full bg-slate-700 text-xs flex items-center justify-center font-bold">3</span>
+            <span class="hidden sm:inline">Fecha y Hora</span>
+          </div>
+          <div id="step-indicator-4" class="py-2.5 rounded-xl bg-slate-800/80 text-slate-400 flex items-center justify-center gap-2 transition-all">
+            <span class="w-5 h-5 rounded-full bg-slate-700 text-xs flex items-center justify-center font-bold">4</span>
+            <span class="hidden sm:inline">Confirmación</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 1: SERVICES SELECTION -->
+      <div id="step-content-1" class="space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="font-serif text-2xl font-bold text-white">Selecciona tu Tratamiento</h2>
+            <p class="text-sm text-slate-400">Explora nuestro menú de relajación y bienestar exclusivo.</p>
+          </div>
+          <!-- Category Filter Pills -->
+          <div id="category-filters" class="flex flex-wrap gap-2">
+            <button onclick="filterServices('todos')" class="cat-pill active px-3 py-1.5 rounded-xl text-xs font-semibold bg-spa-600 text-white border border-spa-500 transition-all">Todos</button>
+            <button onclick="filterServices('Masajes')" class="cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all">Masajes</button>
+            <button onclick="filterServices('Faciales')" class="cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all">Faciales</button>
+            <button onclick="filterServices('Hidroterapia')" class="cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all">Hidroterapia</button>
+            <button onclick="filterServices('Combos')" class="cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all">Combos</button>
+          </div>
+        </div>
+
+        <!-- Services Grid -->
+        <div id="services-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Dynamically filled by JS -->
+        </div>
+      </div>
+
+      <!-- STEP 2: THERAPIST / SPECIALIST SELECTION -->
+      <div id="step-content-2" class="space-y-6 hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="font-serif text-2xl font-bold text-white">Elige a tu Especialista</h2>
+            <p class="text-sm text-slate-400">Profesionales certificados enfocados en tu confort total.</p>
+          </div>
+          <button onclick="goToStep(1)" class="text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Cambiar Servicio
+          </button>
+        </div>
+
+        <!-- Specialists Grid -->
+        <div id="specialists-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Dynamically filled by JS -->
+        </div>
+      </div>
+
+      <!-- STEP 3: DATE & TIME SLOT SELECTION -->
+      <div id="step-content-3" class="space-y-6 hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="font-serif text-2xl font-bold text-white">Agenda Fecha y Hora</h2>
+            <p class="text-sm text-slate-400">Selecciona el día y el horario de tu preferencia.</p>
+          </div>
+          <button onclick="goToStep(2)" class="text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Cambiar Especialista
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <!-- Date Picker Box -->
+          <div class="lg:col-span-5 glass-panel p-6 rounded-2xl space-y-4">
+            <label class="block text-sm font-semibold text-slate-200">Selecciona el Día:</label>
+            <input type="date" id="booking-date" onchange="loadAvailableSlots()" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-spa-500 font-medium">
+            
+            <!-- Summary Callout -->
+            <div id="booking-summary-mini" class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Time Slots Grid -->
+          <div class="lg:col-span-7 glass-panel p-6 rounded-2xl space-y-4">
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-semibold text-slate-200">Horarios Disponibles:</label>
+              <span class="text-xs text-slate-400" id="slot-count-badge">Selecciona una fecha</span>
+            </div>
+            
+            <div id="slots-container" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div class="col-span-full py-8 text-center text-slate-500 text-sm">
+                Por favor selecciona una fecha válida en el calendario para ver los horarios.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-4">
+          <button id="btn-to-step-4" disabled onclick="goToStep(4)" class="px-6 py-3 rounded-xl bg-spa-600 disabled:bg-slate-800 disabled:text-slate-600 text-white font-semibold text-sm transition-all shadow-lg flex items-center gap-2">
+            <span>Siguiente: Datos de Contacto</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 4: CLIENT DETAILS & CONFIRMATION -->
+      <div id="step-content-4" class="space-y-6 hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="font-serif text-2xl font-bold text-white">Completa tu Reserva</h2>
+            <p class="text-sm text-slate-400">Ingresa tus datos para confirmar tu cita en el sistema.</p>
+          </div>
+          <button onclick="goToStep(3)" class="text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Cambiar Fecha/Hora
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <!-- Client Input Form -->
+          <form id="booking-form" onsubmit="handleBookingSubmit(event)" class="lg:col-span-7 glass-panel p-6 rounded-2xl space-y-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Nombre Completo *</label>
+              <input type="text" id="client-name" required placeholder="Ej. María García" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-spa-500 text-sm">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Teléfono / WhatsApp *</label>
+                <input type="tel" id="client-phone" required placeholder="Ej. +58 412 1234567" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-spa-500 text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Correo Electrónico *</label>
+                <input type="email" id="client-email" required placeholder="ejemplo@correo.com" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-spa-500 text-sm">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Observaciones o Peticiones Especiales</label>
+              <textarea id="client-notes" rows="3" placeholder="Alergias, áreas de dolor focalizado o preferencia de intensidad de masaje..." class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-spa-500 text-sm"></textarea>
+            </div>
+
+            <button type="submit" id="btn-submit-booking" class="w-full py-4 rounded-xl bg-gradient-to-r from-spa-600 to-emerald-500 hover:from-spa-500 hover:to-emerald-400 text-white font-bold text-sm shadow-xl shadow-spa-600/20 transition-all flex items-center justify-center gap-2">
+              <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+              <span>Confirmar y Finalizar Cita</span>
+            </button>
+          </form>
+
+          <!-- Final Ticket Summary Sidebar -->
+          <div class="lg:col-span-5 glass-panel p-6 rounded-2xl space-y-6 border-l-4 border-l-spa-500">
+            <h3 class="font-serif text-lg font-bold text-white pb-3 border-b border-slate-800">Resumen de Reserva</h3>
+            <div id="booking-final-summary" class="space-y-4 text-sm text-slate-300">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUCCESS CONFIRMATION MODAL CARD -->
+      <div id="booking-success-card" class="glass-panel p-8 rounded-3xl max-w-2xl mx-auto text-center space-y-6 hidden border border-emerald-500/40">
+        <div class="w-20 h-20 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
+          <i data-lucide="sparkles" class="w-10 h-10"></i>
+        </div>
+        <div class="space-y-2">
+          <h2 class="font-serif text-3xl font-bold text-white">¡Cita Registrada con Éxito!</h2>
+          <p class="text-sm text-slate-300">Tu solicitud de reserva ha sido agendada. A continuación encuentras tu boleto digital:</p>
+        </div>
+
+        <div id="ticket-details-box" class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl text-left space-y-3 font-mono text-xs text-slate-300">
+          <!-- Dynamically populated -->
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+          <a id="whatsapp-share-btn" target="_blank" class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30">
+            <i data-lucide="message-square" class="w-4 h-4"></i>
+            <span>Enviar Confirmación por WhatsApp</span>
+          </a>
+          <button onclick="resetBookingWizard()" class="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition-all">
+            Realizar Otra Reserva
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- VIEW 2: ADMIN PANEL -->
+    <section id="view-admin" class="space-y-6 hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-2xl font-bold text-white">Panel de Control & Citas</h2>
+          <p class="text-sm text-slate-400">Monitorea y filtra la agenda en tiempo real.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="loadAdminAppointments()" class="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-2">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Actualizar Citas
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters Row -->
+      <div class="glass-panel p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Filtrar por Fecha</label>
+          <input type="date" id="admin-filter-date" onchange="renderAdminTable()" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Filtrar por Especialista</label>
+          <select id="admin-filter-therapist" onchange="renderAdminTable()" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs">
+            <option value="todos">Todos los Especialistas</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Estado de Cita</label>
+          <select id="admin-filter-status" onchange="renderAdminTable()" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs">
+            <option value="todos">Todos los Estados</option>
+            <option value="Confirmada">Confirmadas</option>
+            <option value="Cancelada">Canceladas</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Appointments Table -->
+      <div class="glass-panel rounded-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/90 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+              <tr>
+                <th class="p-4">ID Cita</th>
+                <th class="p-4">Fecha & Hora</th>
+                <th class="p-4">Cliente</th>
+                <th class="p-4">Servicio</th>
+                <th class="p-4">Especialista</th>
+                <th class="p-4">Monto</th>
+                <th class="p-4">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="admin-table-body" class="divide-y divide-slate-800/60">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- CONFIG & CODE MODAL (Single-file Deployment Helper) -->
+  <div id="config-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-4xl w-full max-h-[90vh] rounded-3xl flex flex-col overflow-hidden border border-slate-700 shadow-2xl">
+      <!-- Modal Header -->
+      <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 rounded-xl bg-spa-600/20 text-spa-400">
+            <i data-lucide="database" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="font-serif text-xl font-bold text-white">Configuración del Backend & Código Fuente</h3>
+            <p class="text-xs text-slate-400">Conecta tu Google Apps Script o copia los archivos requeridos para Vercel.</p>
+          </div>
+        </div>
+        <button onclick="toggleConfigModal()" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body Tabs -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+        
+        <!-- Input WEB APP URL -->
+        <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <label class="block font-semibold text-slate-200">URL del Web App de Google Apps Script:</label>
+          <div class="flex gap-2">
+            <input type="url" id="script-url-input" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-spa-500 font-mono">
+            <button onclick="saveScriptUrl()" class="px-4 py-2.5 rounded-xl bg-spa-600 hover:bg-spa-500 text-white font-semibold transition-all">
+              Guardar URL
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-400">Al guardar una URL válida, la aplicación pasará automáticamente de utilizar los datos simulados a sincronizar datos reales con Google Sheets.</p>
+        </div>
+
+        <!-- Code Snippets Viewer -->
+        <div class="space-y-4">
+          <div class="flex border-b border-slate-800 gap-4 text-xs font-semibold text-slate-400">
+            <button onclick="switchCodeTab('gs')" id="code-tab-gs" class="pb-2 border-b-2 border-spa-500 text-spa-400">codigo.gs (Apps Script)</button>
+            <button onclick="switchCodeTab('vercel')" id="code-tab-vercel" class="pb-2 border-b-2 border-transparent hover:text-slate-200">vercel.json</button>
+            <button onclick="switchCodeTab('readme')" id="code-tab-readme" class="pb-2 border-b-2 border-transparent hover:text-slate-200 font-sans">Estructura Google Sheet</button>
+          </div>
+
+          <!-- Tab Content 1: codigo.gs -->
+          <div id="code-content-gs" class="space-y-2">
+            <div class="flex justify-between items-center text-[11px] text-slate-400">
+              <span>Copia este código y pégalo en tu proyecto de Google Apps Script (Editor de código).</span>
+              <button onclick="copyToClipboard('code-block-gs')" class="text-spa-400 hover:text-spa-300 font-semibold flex items-center gap-1">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Código
+              </button>
+            </div>
+            <pre class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 overflow-x-auto font-mono text-[11px] max-h-60"><code id="code-block-gs">/**
+ * BACKEND GOOGLE APPS SCRIPT - SPA & WELLNESS
+ */
+function doGet(e) {
+  var action = e.parameter.action || 'readAll';
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  if (action === 'readAll') {
+    var servicios = sheetToObjects(ss.getSheetByName('Servicios'));
+    var especialistas = sheetToObjects(ss.getSheetByName('Especialistas'));
+    var citas = sheetToObjects(ss.getSheetByName('Citas'));
+    
+    return createJsonResponse({
+      status: 'success',
+      servicios: servicios,
+      especialistas: especialistas,
+      citas: citas
+    });
+  }
+}
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    if (data.action === 'createAppointment') {
+      var sheetCitas = ss.getSheetByName('Citas');
+      
+      // Bloqueo / Validación de Solapamiento
+      var citas = sheetToObjects(sheetCitas);
+      var conflicto = citas.some(function(c) {
+        return c.fecha === data.fecha && 
+               c.hora_inicio === data.hora_inicio && 
+               c.id_especialista === data.id_especialista && 
+               c.estado_cita !== 'Cancelada';
+      });
+      
+      if (conflicto) {
+        return createJsonResponse({ status: 'error', message: 'El especialista ya tiene una cita reservada a esa hora.' });
+      }
+      
+      var newId = 'CIT-' + Math.floor(1000 + Math.random() * 9000);
+      sheetCitas.appendRow([
+        newId,
+        data.fecha,
+        data.hora_inicio,
+        data.hora_fin,
+        data.cliente_nombre,
+        data.cliente_telefono,
+        data.cliente_email,
+        data.id_servicio,
+        data.id_especialista,
+        data.monto,
+        'Confirmada',
+        new Date().toISOString()
+      ]);
+      
+      return createJsonResponse({ status: 'success', id_cita: newId });
+    }
+  } catch (err) {
+    return createJsonResponse({ status: 'error', message: err.toString() });
+  }
+}
+
+function sheetToObjects(sheet) {
+  if (!sheet) return [];
+  var data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return [];
+  var headers = data[0];
+  var result = [];
+  for (var i = 1; i < data.length; i++) {
+    var obj = {};
+    for (var j = 0; j < headers.length; j++) {
+      obj[headers[j]] = data[i][j];
+    }
+    result.push(obj);
+  }
+  return result;
+}
+
+function createJsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}</code></pre>
+          </div>
+
+          <!-- Tab Content 2: vercel.json -->
+          <div id="code-content-vercel" class="space-y-2 hidden">
+            <div class="flex justify-between items-center text-[11px] text-slate-400">
+              <span>Archivo `vercel.json` para despliegue automático en Vercel.</span>
+              <button onclick="copyToClipboard('code-block-vercel')" class="text-spa-400 hover:text-spa-300 font-semibold flex items-center gap-1">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar vercel.json
+              </button>
+            </div>
+            <pre class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 overflow-x-auto font-mono text-[11px]"><code id="code-block-vercel">{
+  "version": 2,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}</code></pre>
+          </div>
+
+          <!-- Tab Content 3: Sheets setup -->
+          <div id="code-content-readme" class="space-y-2 hidden text-slate-300 leading-relaxed">
+            <p>Crea un Google Sheet y renombra tres pestañas exactamente con estos nombres y encabezados en la **Fila 1**:</p>
+            <ul class="list-disc pl-5 space-y-2">
+              <li><strong class="text-spa-400">Servicios:</strong> <code>id_servicio</code>, <code>nombre</code>, <code>categoria</code>, <code>duracion_min</code>, <code>precio</code>, <code>descripcion</code>, <code>imagen_url</code></li>
+              <li><strong class="text-spa-400">Especialistas:</strong> <code>id_especialista</code>, <code>nombre</code>, <code>especialidad</code>, <code>turnos_horarios</code>, <code>estado</code></li>
+              <li><strong class="text-spa-400">Citas:</strong> <code>id_cita</code>, <code>fecha</code>, <code>hora_inicio</code>, <code>hora_fin</code>, <code>cliente_nombre</code>, <code>cliente_telefono</code>, <code>cliente_email</code>, <code>id_servicio</code>, <code>id_especialista</code>, <code>monto</code>, <code>estado_cita</code>, <code>fecha_registro</code></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION JAVASCRIPT ENGINE -->
+  <script>
+    // --- STATE MANAGEMENT ---
+    let API_URL = localStorage.getItem('spa_script_url') || '';
+    
+    // Mock Data Store (Fallback when API_URL is empty)
+    let state = {
+      servicios: [
+        { id_servicio: 'SRV-101', nombre: 'Masaje Relajante Aromaterapia', categoria: 'Masajes', duracion_min: 60, precio: 45, descripcion: 'Masaje corporal fluido con aceites esenciales botánicos para reducir tensión.', imagen_url: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=500&q=80' },
+        { id_servicio: 'SRV-102', nombre: 'Facial Hidratante Profundo', categoria: 'Faciales', duracion_min: 45, precio: 50, descripcion: 'Limpieza e hidratación intensiva con ácido hialurónico y mascarilla natural.', imagen_url: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=500&q=80' },
+        { id_servicio: 'SRV-103', nombre: 'Circuito de Hidroterapia & Sauna', categoria: 'Hidroterapia', duracion_min: 90, precio: 65, descripcion: 'Acceso a pozas térmicas, jacuzzi desintoxicante y vapor de eucalipto.', imagen_url: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=500&q=80' },
+        { id_servicio: 'SRV-104', nombre: 'Ritual Parejas Deluxe', categoria: 'Combos', duracion_min: 120, precio: 130, descripcion: 'Masaje duo, copa de vino espumoso y exfoliación corporal en suite privada.', imagen_url: 'https://images.unsplash.com/photo-1591343393572-37043ff124d7?w=500&q=80' },
+        { id_servicio: 'SRV-105', nombre: 'Masaje Tejido Profundo (Deep Tissue)', categoria: 'Masajes', duracion_min: 60, precio: 55, descripcion: 'Terapia neuromuscular diseñada para liberar contracturas y fatiga severa.', imagen_url: 'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=500&q=80' }
+      ],
+      especialistas: [
+        { id_especialista: 'ESP-01', nombre: 'Elena Rostova', especialidad: 'Masajista Terapéutica', turnos_horarios: '09:00,10:30,12:00,14:00,15:30,17:00', estado: 'Activo' },
+        { id_especialista: 'ESP-02', nombre: 'Carlos Mendoza', especialidad: 'Especialista Facial & Cosmiatra', turnos_horarios: '09:00,10:00,11:30,14:00,16:00', estado: 'Activo' },
+        { id_especialista: 'ESP-03', nombre: 'Sofia Chen', especialidad: 'Terapeuta Holística', turnos_horarios: '10:00,11:30,13:00,15:00,16:30', estado: 'Activo' }
+      ],
+      citas: [
+        { id_cita: 'CIT-9801', fecha: '2026-10-25', hora_inicio: '10:00', hora_fin: '11:00', cliente_nombre: 'Lucía Fernández', cliente_telefono: '+58 414 9876543', cliente_email: 'lucia@gmail.com', id_servicio: 'SRV-101', id_especialista: 'ESP-01', monto: 45, estado_cita: 'Confirmada' }
+      ]
+    };
+
+    // Current Active Booking Draft Selection
+    let draftBooking = {
+      servicio: null,
+      especialista: null,
+      fecha: '',
+      hora_inicio: '',
+      hora_fin: '',
+      monto: 0
+    };
+
+    // INIT FUNCTION
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      checkScriptStatus();
+      loadInitialData();
+    });
+
+    function checkScriptStatus() {
+      const statusDot = document.getElementById('status-dot');
+      const scriptInput = document.getElementById('script-url-input');
+      const demoBanner = document.getElementById('demo-banner');
+
+      if (API_URL && API_URL.trim() !== '') {
+        statusDot.className = "absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950 shadow-md";
+        scriptInput.value = API_URL;
+        if (demoBanner) demoBanner.classList.add('hidden');
+      } else {
+        statusDot.className = "absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border-2 border-slate-950";
+        if (demoBanner) demoBanner.classList.remove('hidden');
+      }
+    }
+
+    async function loadInitialData() {
+      if (API_URL) {
+        try {
+          const res = await fetch(`${API_URL}?action=readAll`);
+          const data = await res.json();
+          if (data.status === 'success') {
+            state.servicios = data.servicios.length ? data.servicios : state.servicios;
+            state.especialistas = data.especialistas.length ? data.especialistas : state.especialistas;
+            state.citas = data.citas.length ? data.citas : state.citas;
+          }
+        } catch (err) {
+          console.warn("Fallo conectando a la API real. Usando datos demo locales.", err);
+        }
+      }
+      renderServices();
+      populateAdminFilters();
+    }
+
+    // Navigation View Switcher
+    function switchView(view) {
+      const btnBooking = document.getElementById('nav-booking');
+      const btnAdmin = document.getElementById('nav-admin');
+      const viewBooking = document.getElementById('view-booking');
+      const viewAdmin = document.getElementById('view-admin');
+
+      if (view === 'booking') {
+        btnBooking.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 bg-spa-600 text-white shadow-md";
+        btnAdmin.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2";
+        viewBooking.classList.remove('hidden');
+        viewAdmin.classList.add('hidden');
+      } else {
+        btnAdmin.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 bg-spa-600 text-white shadow-md";
+        btnBooking.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2";
+        viewAdmin.classList.remove('hidden');
+        viewBooking.classList.add('hidden');
+        loadAdminAppointments();
+      }
+    }
+
+    // Wizard Step Navigation
+    function goToStep(step) {
+      for (let i = 1; i <= 4; i++) {
+        const stepContent = document.getElementById(`step-content-${i}`);
+        const stepIndicator = document.getElementById(`step-indicator-${i}`);
+        if (stepContent) stepContent.classList.add('hidden');
+
+        if (stepIndicator) {
+          if (i === step) {
+            stepIndicator.className = "py-2.5 rounded-xl bg-spa-600 text-white flex items-center justify-center gap-2 transition-all shadow-md";
+            stepIndicator.querySelector('span:first-child').className = "w-5 h-5 rounded-full bg-white/20 text-xs flex items-center justify-center font-bold";
+          } else if (i < step) {
+            stepIndicator.className = "py-2.5 rounded-xl bg-spa-800 text-spa-200 flex items-center justify-center gap-2 transition-all";
+            stepIndicator.querySelector('span:first-child').className = "w-5 h-5 rounded-full bg-spa-700 text-xs flex items-center justify-center font-bold";
+          } else {
+            stepIndicator.className = "py-2.5 rounded-xl bg-slate-800/80 text-slate-400 flex items-center justify-center gap-2 transition-all";
+            stepIndicator.querySelector('span:first-child').className = "w-5 h-5 rounded-full bg-slate-700 text-xs flex items-center justify-center font-bold";
+          }
+        }
+      }
+      document.getElementById(`step-content-${step}`).classList.remove('hidden');
+      if (step === 2) renderSpecialists();
+      if (step === 3) updateBookingSummaryMini();
+      if (step === 4) updateBookingFinalSummary();
+    }
+
+    // STEP 1: SERVICES RENDER
+    function renderServices(filterCat = 'todos') {
+      const grid = document.getElementById('services-grid');
+      const list = filterCat === 'todos' ? state.servicios : state.servicios.filter(s => s.categoria === filterCat);
+
+      grid.innerHTML = list.map(s => `
+        <div class="glass-panel rounded-2xl overflow-hidden hover:border-spa-500/50 transition-all group flex flex-col justify-between">
+          <div>
+            <div class="h-44 w-full overflow-hidden relative">
+              <img src="${s.imagen_url}" alt="${s.nombre}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <span class="absolute top-3 right-3 px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md text-[11px] font-semibold text-spa-300 border border-slate-700">
+                ${s.categoria}
+              </span>
+            </div>
+            <div class="p-5 space-y-3">
+              <h3 class="font-serif text-lg font-bold text-white leading-snug">${s.nombre}</h3>
+              <p class="text-xs text-slate-400 leading-relaxed">${s.descripcion}</p>
+            </div>
+          </div>
+          <div class="px-5 pb-5 pt-2 border-t border-slate-800/60 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-slate-400 block">${s.duracion_min} Minutos</span>
+              <span class="text-lg font-bold text-emerald-400">$${s.precio} USD</span>
+            </div>
+            <button onclick="selectService('${s.id_servicio}')" class="px-4 py-2 rounded-xl bg-spa-600 hover:bg-spa-500 text-white font-semibold text-xs shadow-md transition-all flex items-center gap-1">
+              <span>Seleccionar</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function filterServices(cat) {
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        btn.className = "cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all";
+      });
+      event.target.className = "cat-pill active px-3 py-1.5 rounded-xl text-xs font-semibold bg-spa-600 text-white border border-spa-500 transition-all";
+      renderServices(cat);
+    }
+
+    function selectService(id) {
+      draftBooking.servicio = state.servicios.find(s => s.id_servicio === id);
+      draftBooking.monto = draftBooking.servicio.precio;
+      goToStep(2);
+    }
+
+    // STEP 2: SPECIALISTS RENDER
+    function renderSpecialists() {
+      const grid = document.getElementById('specialists-grid');
+      grid.innerHTML = state.especialistas.map(e => `
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800 hover:border-spa-500/50 transition-all flex flex-col justify-between space-y-4">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-slate-800 to-spa-800 border border-slate-700 flex items-center justify-center text-spa-300 font-serif font-bold text-xl">
+              ${e.nombre.charAt(0)}
+            </div>
+            <div>
+              <h3 class="font-serif text-lg font-bold text-white">${e.nombre}</h3>
+              <p class="text-xs text-spa-400 font-medium">${e.especialidad}</p>
+            </div>
+          </div>
+          <p class="text-xs text-slate-400">Atención personalizada y certificada para tu tratamiento de ${draftBooking.servicio?.nombre || 'bienestar'}.</p>
+          <button onclick="selectSpecialist('${e.id_especialista}')" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-spa-600 text-slate-200 hover:text-white font-semibold text-xs transition-all flex items-center justify-center gap-2">
+            <span>Elegir Especialista</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function selectSpecialist(id) {
+      draftBooking.especialista = state.especialistas.find(e => e.id_especialista === id);
+      goToStep(3);
+    }
+
+    // STEP 3: DATE & SLOTS ENGINE
+    function updateBookingSummaryMini() {
+      const box = document.getElementById('booking-summary-mini');
+      box.innerHTML = `
+        <div class="text-slate-400">Servicio: <strong class="text-white">${draftBooking.servicio.nombre}</strong> (${draftBooking.servicio.duracion_min} min)</div>
+        <div class="text-slate-400">Especialista: <strong class="text-white">${draftBooking.especialista.nombre}</strong></div>
+        <div class="text-slate-400">Precio: <strong class="text-emerald-400">$${draftBooking.monto} USD</strong></div>
+      `;
+      // Set minimum date to today
+      const today = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById('booking-date');
+      dateInput.min = today;
+      if (!dateInput.value) dateInput.value = today;
+      loadAvailableSlots();
+    }
+
+    function loadAvailableSlots() {
+      const selectedDate = document.getElementById('booking-date').value;
+      const container = document.getElementById('slots-container');
+      const badge = document.getElementById('slot-count-badge');
+      const nextBtn = document.getElementById('btn-to-step-4');
+
+      if (!selectedDate) return;
+      draftBooking.fecha = selectedDate;
+      draftBooking.hora_inicio = ''; // Reset selection
+
+      nextBtn.disabled = true;
+
+      // Extract specialist slots
+      const rawSlots = draftBooking.especialista.turnos_horarios.split(',');
+      
+      // Filter out slots already taken in state.citas
+      const occupiedSlots = state.citas
+        .filter(c => c.fecha === selectedDate && c.id_especialista === draftBooking.especialista.id_especialista && c.estado_cita !== 'Cancelada')
+        .map(c => c.hora_inicio);
+
+      badge.textContent = `${rawSlots.length - occupiedSlots.length} turnos libres para esta fecha`;
+
+      container.innerHTML = rawSlots.map(slot => {
+        const isOccupied = occupiedSlots.includes(slot);
+        return `
+          <button 
+            type="button"
+            ${isOccupied ? 'disabled' : ''} 
+            onclick="selectSlot('${slot}')"
+            class="slot-btn p-3 rounded-xl text-xs font-semibold border transition-all text-center ${
+              isOccupied 
+                ? 'bg-slate-900/40 text-slate-600 border-slate-800/40 cursor-not-allowed line-through' 
+                : 'bg-slate-900 border-slate-800 text-slate-200 hover:border-spa-500 hover:text-white'
+            }"
+            data-slot="${slot}"
+          >
+            ${slot} ${isOccupied ? '(Ocupado)' : ''}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectSlot(timeSlot) {
+      document.querySelectorAll('.slot-btn').forEach(btn => {
+        if (!btn.disabled) {
+          btn.className = "slot-btn p-3 rounded-xl text-xs font-semibold border transition-all text-center bg-slate-900 border-slate-800 text-slate-200 hover:border-spa-500 hover:text-white";
+        }
+      });
+      
+      // Calculate end time automatically based on service duration
+      const [hours, minutes] = timeSlot.split(':').map(Number);
+      const startTime = new Date();
+      startTime.setHours(hours, minutes, 0);
+      const endTime = new Date(startTime.getTime() + draftBooking.servicio.duracion_min * 60000);
+      const endHours = String(endTime.getHours()).padStart(2, '0');
+      const endMinutes = String(endTime.getMinutes()).padStart(2, '0');
+
+      draftBooking.hora_inicio = timeSlot;
+      draftBooking.hora_fin = `${endHours}:${endMinutes}`;
+
+      event.target.className = "slot-btn p-3 rounded-xl text-xs font-semibold border transition-all text-center bg-spa-600 border-spa-500 text-white shadow-md";
+      document.getElementById('btn-to-step-4').disabled = false;
+    }
+
+    // STEP 4: FINAL SUMMARY & SUBMISSION
+    function updateBookingFinalSummary() {
+      const summaryBox = document.getElementById('booking-final-summary');
+      summaryBox.innerHTML = `
+        <div class="flex justify-between py-2 border-b border-slate-800">
+          <span class="text-slate-400">Tratamiento:</span>
+          <span class="font-semibold text-white">${draftBooking.servicio.nombre}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-slate-800">
+          <span class="text-slate-400">Duración:</span>
+          <span class="font-semibold text-white">${draftBooking.servicio.duracion_min} Minutos</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-slate-800">
+          <span class="text-slate-400">Especialista:</span>
+          <span class="font-semibold text-white">${draftBooking.especialista.nombre}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-slate-800">
+          <span class="text-slate-400">Fecha Cita:</span>
+          <span class="font-semibold text-white">${draftBooking.fecha}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-slate-800">
+          <span class="text-slate-400">Horario:</span>
+          <span class="font-semibold text-spa-300">${draftBooking.hora_inicio} - ${draftBooking.hora_fin}</span>
+        </div>
+        <div class="flex justify-between py-2 pt-4 text-base">
+          <span class="font-bold text-white">Monto Total:</span>
+          <span class="font-bold text-emerald-400">$${draftBooking.monto} USD</span>
+        </div>
+      `;
+    }
+
+    async function handleBookingSubmit(event) {
+      event.preventDefault();
+      const submitBtn = document.getElementById('btn-submit-booking');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span>Procesando Reserva...</span>`;
+
+      const payload = {
+        action: 'createAppointment',
+        fecha: draftBooking.fecha,
+        hora_inicio: draftBooking.hora_inicio,
+        hora_fin: draftBooking.hora_fin,
+        cliente_nombre: document.getElementById('client-name').value,
+        cliente_telefono: document.getElementById('client-phone').value,
+        cliente_email: document.getElementById('client-email').value,
+        cliente_notas: document.getElementById('client-notes').value,
+        id_servicio: draftBooking.servicio.id_servicio,
+        id_especialista: draftBooking.especialista.id_especialista,
+        monto: draftBooking.monto
+      };
+
+      let appointmentId = 'CIT-' + Math.floor(1000 + Math.random() * 9000);
+
+      if (API_URL) {
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          const result = await res.json();
+          if (result.status === 'success') {
+            appointmentId = result.id_cita;
+          } else {
+            alert("Error del Servidor: " + result.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span>Confirmar y Finalizar Cita</span>`;
+            return;
+          }
+        } catch (err) {
+          console.warn("Fallo envio a API. Guardando localmente.", err);
+        }
+      }
+
+      // Add to local state
+      state.citas.push({ ...payload, id_cita: appointmentId, estado_cita: 'Confirmada' });
+
+      // Display Success Modal Card
+      document.getElementById('step-content-4').classList.add('hidden');
+      const successCard = document.getElementById('booking-success-card');
+      successCard.classList.remove('hidden');
+
+      const ticketBox = document.getElementById('ticket-details-box');
+      ticketBox.innerHTML = `
+        <div>COMPROBANTE DE CITA: <span class="text-emerald-400 font-bold">${appointmentId}</span></div>
+        <div>CLIENTE: ${payload.cliente_nombre}</div>
+        <div>TRATAMIENTO: ${draftBooking.servicio.nombre}</div>
+        <div>ESPECIALISTA: ${draftBooking.especialista.nombre}</div>
+        <div>FECHA & HORA: ${payload.fecha} @ ${payload.hora_inicio} - ${payload.hora_fin}</div>
+        <div>TOTAL: $${payload.monto} USD</div>
+      `;
+
+      // Setup WhatsApp Share Link
+      const waMessage = encodeURIComponent(`¡Hola Aura Spa! Acabo de agendar una cita.\n*Comprobante:* ${appointmentId}\n*Cliente:* ${payload.cliente_nombre}\n*Servicio:* ${draftBooking.servicio.nombre}\n*Fecha/Hora:* ${payload.fecha} a las ${payload.hora_inicio}`);
+      document.getElementById('whatsapp-share-btn').href = `https://wa.me/${payload.cliente_telefono.replace(/[^0-9]/g, '')}?text=${waMessage}`;
+    }
+
+    function resetBookingWizard() {
+      document.getElementById('booking-success-card').classList.add('hidden');
+      document.getElementById('booking-form').reset();
+      draftBooking = { servicio: null, especialista: null, fecha: '', hora_inicio: '', hora_fin: '', monto: 0 };
+      goToStep(1);
+    }
+
+    // --- ADMIN PANEL FUNCTIONS ---
+    function populateAdminFilters() {
+      const select = document.getElementById('admin-filter-therapist');
+      select.innerHTML = `<option value="todos">Todos los Especialistas</option>` +
+        state.especialistas.map(e => `<option value="${e.id_especialista}">${e.nombre}</option>`).join('');
+    }
+
+    function loadAdminAppointments() {
+      renderAdminTable();
+    }
+
+    function renderAdminTable() {
+      const tbody = document.getElementById('admin-table-body');
+      const filterDate = document.getElementById('admin-filter-date').value;
+      const filterTherapist = document.getElementById('admin-filter-therapist').value;
+      const filterStatus = document.getElementById('admin-filter-status').value;
+
+      let filtered = state.citas;
+      if (filterDate) filtered = filtered.filter(c => c.fecha === filterDate);
+      if (filterTherapist !== 'todos') filtered = filtered.filter(c => c.id_especialista === filterTherapist);
+      if (filterStatus !== 'todos') filtered = filtered.filter(c => c.estado_cita === filterStatus);
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500">No se encontraron citas con los filtros seleccionados.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(c => {
+        const srv = state.servicios.find(s => s.id_servicio === c.id_servicio);
+        const esp = state.especialistas.find(e => e.id_especialista === c.id_especialista);
+        return `
+          <tr class="hover:bg-slate-900/50 transition-colors">
+            <td class="p-4 font-mono font-bold text-spa-300">${c.id_cita}</td>
+            <td class="p-4">${c.fecha} <span class="text-slate-400 font-mono">(${c.hora_inicio})</span></td>
+            <td class="p-4 font-semibold text-white">${c.cliente_nombre}<br><span class="text-[10px] text-slate-400 font-normal">${c.cliente_telefono}</span></td>
+            <td class="p-4">${srv ? srv.nombre : c.id_servicio}</td>
+            <td class="p-4">${esp ? esp.nombre : c.id_especialista}</td>
+            <td class="p-4 text-emerald-400 font-bold">$${c.monto}</td>
+            <td class="p-4">
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${c.estado_cita === 'Confirmada' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}">
+                ${c.estado_cita}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // --- MODALS & CONFIG ---
+    function toggleConfigModal() {
+      const modal = document.getElementById('config-modal');
+      modal.classList.toggle('hidden');
+    }
+
+    function saveScriptUrl() {
+      const url = document.getElementById('script-url-input').value.trim();
+      localStorage.setItem('spa_script_url', url);
+      API_URL = url;
+      checkScriptStatus();
+      toggleConfigModal();
+      loadInitialData();
+    }
+
+    function switchCodeTab(tab) {
+      document.getElementById('code-content-gs').classList.add('hidden');
+      document.getElementById('code-content-vercel').classList.add('hidden');
+      document.getElementById('code-content-readme').classList.add('hidden');
+
+      document.getElementById('code-tab-gs').className = "pb-2 border-b-2 border-transparent hover:text-slate-200";
+      document.getElementById('code-tab-vercel').className = "pb-2 border-b-2 border-transparent hover:text-slate-200";
+      document.getElementById('code-tab-readme').className = "pb-2 border-b-2 border-transparent hover:text-slate-200";
+
+      document.getElementById(`code-content-${tab}`).classList.remove('hidden');
+      document.getElementById(`code-tab-${tab}`).className = "pb-2 border-b-2 border-spa-500 text-spa-400";
+    }
+
+    function copyToClipboard(elementId) {
+      const text = document.getElementById(elementId).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("¡Código copiado al portapapeles!");
+      });
+    }
+  </script>
+</body>
+</html>
